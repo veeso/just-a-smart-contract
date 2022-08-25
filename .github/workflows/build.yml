@@ -1,0 +1,34 @@
+name: Build
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup NodeJS 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+      - name: Install Truffle
+        run: npm install -g truffle
+      - name: Install truffle dependencies
+        run: npm install
+      - name: Run truffle test
+        run: CI=true truffle test
+      - name: Lint
+        run: npx solium -d contracts/
+      - name: Run SmartBugs Analysis
+        run: |
+          solidityFiles=($(ls -I contracts))
+          DIR=$(pwd);cd smartbugs
+          for sol in "${solidityFiles[@]}"
+          do
+              echo "Analysing $sol..."
+              python smartBugs.py --tool all --file $DIR/contracts/$sol
+          done
